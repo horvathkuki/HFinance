@@ -1,0 +1,20 @@
+# Build artifacts
+bin/
+obj/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+
+# Logs
+*.log
+
+# Local development configuration
+appsettings.Development.json
+appsettings.Local.json
+*.local.json
+
+# Environment files
+.env
+.env.*

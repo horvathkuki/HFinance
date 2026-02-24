@@ -1,0 +1,38 @@
+# Build output
+**/bin/
+**/obj/
+
+# Node / Angular
+**/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+frontend/.sass-cache/
+frontend/npm-debug.log*
+frontend/yarn-error.log*
+
+# IDE files
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# VS Code (workspace-local)
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
+!.vscode/mcp.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local config / secrets
+**/appsettings.Development.json
+**/*.local.json
+**/.env
+**/.env.*

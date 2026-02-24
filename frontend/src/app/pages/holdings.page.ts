@@ -55,12 +55,7 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
               <input class="form-control" type="date" formControlName="purchaseDate" />
             </div>
             <div class="col-12 col-md-2">
-              <button class="btn btn-primary w-100" type="submit" [disabled]="holdingForm.invalid">
-                {{ isEditMode() ? 'Save' : 'Add' }}
-              </button>
-            </div>
-            <div class="col-12 col-md-2" *ngIf="isEditMode()">
-              <button class="btn btn-outline-secondary w-100" type="button" (click)="cancelEdit()">Cancel</button>
+              <button class="btn btn-primary w-100" type="submit" [disabled]="holdingForm.invalid">Add</button>
             </div>
           </form>
 
@@ -79,27 +74,69 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
               </thead>
               <tbody>
                 <tr *ngFor="let holding of workspace.holdings()">
-                  <td class="fw-semibold">{{ holding.symbol }}</td>
-                  <td>{{ holding.quantity }}</td>
-                  <td>{{ holding.averagePurchasePrice }}</td>
-                  <td>{{ holding.currency }}</td>
-                  <td>{{ holding.groupName }}</td>
-                  <td>{{ holding.purchaseDate | date:'yyyy-MM-dd' }}</td>
-                  <td>
-                    <div class="d-flex gap-2">
-                      <button class="btn btn-sm btn-outline-primary" (click)="startEdit(holding)" title="Edit holding" aria-label="Edit holding">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708L5.207 14.5H2a1 1 0 0 1-1-1v-3.207zM11.207 2 2 11.207V14h2.793L14 4.793z"/>
-                        </svg>
-                      </button>
-                      <button class="btn btn-sm btn-outline-danger" (click)="confirmDeleteHolding(holding.id, holding.symbol)" title="Delete holding" aria-label="Delete holding">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0A.5.5 0 0 1 8.5 6v6a.5.5 0 0 1-1 0V6A.5.5 0 0 1 8 5.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                          <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 1 1 0-2H5.5l1-1h3l1 1h3a1 1 0 0 1 1 1M4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4z"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
+                  <ng-container *ngIf="editingHoldingId() === holding.id; else readOnlyRow">
+                    <td>
+                      <input class="form-control form-control-sm" type="text" [formControl]="editHoldingForm.controls.symbol" [class.is-invalid]="editHoldingInvalid('symbol')" />
+                    </td>
+                    <td>
+                      <input class="form-control form-control-sm" type="number" step="0.0001" [formControl]="editHoldingForm.controls.quantity" [class.is-invalid]="editHoldingInvalid('quantity')" />
+                    </td>
+                    <td>
+                      <input class="form-control form-control-sm" type="number" step="0.01" [formControl]="editHoldingForm.controls.averagePurchasePrice" [class.is-invalid]="editHoldingInvalid('averagePurchasePrice')" />
+                    </td>
+                    <td>
+                      <select class="form-select form-select-sm" [formControl]="editHoldingForm.controls.currency">
+                        <option value="EUR">EUR</option>
+                        <option value="USD">USD</option>
+                        <option value="RON">RON</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select class="form-select form-select-sm" [formControl]="editHoldingForm.controls.groupId">
+                        <option *ngFor="let group of workspace.groups()" [value]="group.id">{{ group.name }}</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input class="form-control form-control-sm" type="date" [formControl]="editHoldingForm.controls.purchaseDate" />
+                    </td>
+                    <td>
+                      <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-success" (click)="saveEdit(holding.id)" [disabled]="editHoldingForm.invalid" title="Save holding" aria-label="Save holding">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M13.485 1.929a.75.75 0 0 1 .086 1.057l-7.25 8.5a.75.75 0 0 1-1.08.042l-2.75-2.75a.75.75 0 1 1 1.06-1.06l2.177 2.176 6.72-7.878a.75.75 0 0 1 1.057-.087"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" (click)="cancelEdit()" title="Cancel edit" aria-label="Cancel edit">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </ng-container>
+                  <ng-template #readOnlyRow>
+                    <td class="fw-semibold">{{ holding.symbol }}</td>
+                    <td>{{ holding.quantity }}</td>
+                    <td>{{ holding.averagePurchasePrice }}</td>
+                    <td>{{ holding.currency }}</td>
+                    <td>{{ holding.groupName }}</td>
+                    <td>{{ holding.purchaseDate | date:'yyyy-MM-dd' }}</td>
+                    <td>
+                      <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" (click)="startEdit(holding)" title="Edit holding" aria-label="Edit holding">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708L5.207 14.5H2a1 1 0 0 1-1-1v-3.207zM11.207 2 2 11.207V14h2.793L14 4.793z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" (click)="confirmDeleteHolding(holding.id, holding.symbol)" title="Delete holding" aria-label="Delete holding">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0A.5.5 0 0 1 8.5 6v6a.5.5 0 0 1-1 0V6A.5.5 0 0 1 8 5.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 1 1 0-2H5.5l1-1h3l1 1h3a1 1 0 0 1 1 1M4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </ng-template>
                 </tr>
               </tbody>
             </table>
@@ -117,9 +154,17 @@ export class HoldingsPage {
   private readonly modalService = inject(NgbModal);
   readonly workspace = inject(PortfolioWorkspaceService);
   readonly editingHoldingId = signal<number | null>(null);
-  readonly isEditMode = signal(false);
 
   readonly holdingForm = this.formBuilder.group({
+    symbol: ['', [Validators.required]],
+    quantity: [1, [Validators.required, Validators.min(0.0001)]],
+    averagePurchasePrice: [1, [Validators.required, Validators.min(0.01)]],
+    currency: ['USD', [Validators.required]],
+    groupId: [0, [Validators.required, Validators.min(1)]],
+    purchaseDate: [''],
+  });
+
+  readonly editHoldingForm = this.formBuilder.group({
     symbol: ['', [Validators.required]],
     quantity: [1, [Validators.required, Validators.min(0.0001)]],
     averagePurchasePrice: [1, [Validators.required, Validators.min(0.01)]],
@@ -133,7 +178,7 @@ export class HoldingsPage {
     this.prefillDefaultGroup();
     effect(() => {
       const groups = this.workspace.groups();
-      if (!this.isEditMode() && groups.length > 0) {
+      if (!this.editingHoldingId() && groups.length > 0) {
         const currentGroupId = Number(this.holdingForm.controls.groupId.value ?? 0);
         if (currentGroupId <= 0) {
           this.holdingForm.patchValue({ groupId: groups[0].id });
@@ -144,7 +189,8 @@ export class HoldingsPage {
 
   selectPortfolio(portfolio: Portfolio): void {
     this.workspace.selectPortfolio(portfolio);
-    this.resetForm();
+    this.cancelEdit();
+    this.resetAddForm();
     this.prefillDefaultGroup();
   }
 
@@ -162,15 +208,8 @@ export class HoldingsPage {
       groupId: Number(value.groupId ?? 0),
       purchaseDate: value.purchaseDate || undefined,
     };
-
-    const editingId = this.editingHoldingId();
-    if (this.isEditMode() && editingId !== null) {
-      this.workspace.updateHolding(selected.id, editingId, payload);
-    } else {
-      this.workspace.addHolding(selected.id, payload);
-    }
-
-    this.resetForm();
+    this.workspace.addHolding(selected.id, payload);
+    this.resetAddForm();
   }
 
   deleteHolding(holdingId: number): void {
@@ -180,14 +219,13 @@ export class HoldingsPage {
     }
     this.workspace.deleteHolding(selected.id, holdingId);
     if (this.editingHoldingId() === holdingId) {
-      this.resetForm();
+      this.cancelEdit();
     }
   }
 
   startEdit(holding: Holding): void {
-    this.isEditMode.set(true);
     this.editingHoldingId.set(holding.id);
-    this.holdingForm.patchValue({
+    this.editHoldingForm.patchValue({
       symbol: holding.symbol,
       quantity: holding.quantity,
       averagePurchasePrice: holding.averagePurchasePrice,
@@ -197,8 +235,26 @@ export class HoldingsPage {
     });
   }
 
+  saveEdit(holdingId: number): void {
+    const selected = this.workspace.selectedPortfolio();
+    if (!selected || this.editHoldingForm.invalid) {
+      return;
+    }
+    const value = this.editHoldingForm.getRawValue();
+    const payload = {
+      symbol: (value.symbol ?? '').trim().toUpperCase(),
+      quantity: Number(value.quantity ?? 0),
+      averagePurchasePrice: Number(value.averagePurchasePrice ?? 0),
+      currency: value.currency ?? 'USD',
+      groupId: Number(value.groupId ?? 0),
+      purchaseDate: value.purchaseDate || undefined,
+    };
+    this.workspace.updateHolding(selected.id, holdingId, payload);
+    this.cancelEdit();
+  }
+
   cancelEdit(): void {
-    this.resetForm();
+    this.editingHoldingId.set(null);
   }
 
   confirmDeleteHolding(holdingId: number, symbol: string): void {
@@ -219,9 +275,12 @@ export class HoldingsPage {
     return !!control && control.invalid && (control.dirty || control.touched);
   }
 
-  private resetForm(): void {
-    this.isEditMode.set(false);
-    this.editingHoldingId.set(null);
+  editHoldingInvalid(controlName: string): boolean {
+    const control = this.editHoldingForm.controls[controlName as keyof typeof this.editHoldingForm.controls];
+    return !!control && control.invalid && (control.dirty || control.touched);
+  }
+
+  private resetAddForm(): void {
     this.holdingForm.patchValue({
       symbol: '',
       quantity: 1,

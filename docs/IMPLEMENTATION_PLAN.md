@@ -31,18 +31,39 @@ It is written to be easy to follow for a mid-level developer.
   - Login/Register/Account/Admin Users/Dashboard pages
   - Portfolio/holding/group/snapshot flows
   - Charts via `ng2-charts + Chart.js`
+  - Navigation hardening:
+    - `Dashboard` link visible only for authenticated users
+    - Public nav shows `Login` and `Register` when logged out
+    - Root and wildcard routes redirect to `login` for public-first entry
+  - Frontend navigation/tab structure for authenticated users:
+    - `Dashboard`
+    - `Holdings`
+    - `Allocations`
+    - `History`
+    - `Snapshots`
+    - `Settings`
+  - Dashboard logic split into tab-specific pages with shared workspace state service.
+  - Bootstrap + ng-bootstrap UI system rollout:
+    - Bootstrap global styles and design tokens added
+    - Navbar migrated to responsive Bootstrap navbar with active-link highlighting
+    - Forms/tables/cards migrated to Bootstrap structure across pages
+    - ng-bootstrap interactions added (`ngbDropdown`, `ngbModal`, `ngbToast`, `ngbNav`)
 
 ### Partially Implemented / Needs Hardening
 - Backend APIs exist but still need stronger production validation/error standardization across all endpoints.
-- Frontend UX is functional but still basic; design polish and deeper state/error handling remain.
+- Frontend UX is functional and tab-structured, but design polish and deeper state/error handling remain.
 - API coverage tests are not fully implemented yet (unit + integration + e2e pending).
 - Deployment/runbook docs need a complete end-to-end operational checklist.
+- Bundle optimization is needed after Bootstrap adoption (current frontend build exceeds budget).
 
 ### Immediate Next Steps
 1. Add backend automated tests for auth, ownership, groups, snapshots, analytics, and FX fallback.
 2. Add frontend tests for auth/session flows, dashboard behaviors, and chart data rendering.
 3. Run and verify all EF migrations in target environments (`Development`, `Staging`, `Production`).
 4. Normalize any remaining legacy route usage so all endpoints are consistently under `/api/v1`.
+5. Add explicit frontend tests for nav visibility by auth state (logged out vs logged in vs admin).
+6. Add frontend tests for cross-tab state consistency (portfolio selection and data refresh across Dashboard/Holdings/Allocations/History/Snapshots).
+7. Reduce frontend bundle size and adjust/optimize Angular budgets for the new UI stack.
 
 ## Engineering Readability Standards
 1. Use clear, explicit names (`portfolioSnapshotService`, not abbreviations).

@@ -8,37 +8,48 @@ import { UserProfile } from '../models';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <section class="page">
-      <h1>Admin - Users</h1>
-      <button (click)="load()">Refresh</button>
-      <table *ngIf="users().length > 0">
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Name</th>
-            <th>Roles</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let user of users()">
-            <td>{{ user.email }}</td>
-            <td>{{ user.displayName }}</td>
-            <td>{{ user.roles.join(', ') }}</td>
-            <td>{{ user.isActive ? 'Active' : 'Inactive' }}</td>
-            <td>
-              <button (click)="toggleStatus(user)">{{ user.isActive ? 'Disable' : 'Enable' }}</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <section class="hf-page">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Admin - Users</h1>
+        <button class="btn btn-outline-primary" (click)="load()">Refresh</button>
+      </div>
+
+      <div class="card hf-card">
+        <div class="card-body hf-table-wrap">
+          <table class="table table-striped table-hover align-middle" *ngIf="users().length > 0; else noUsers">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Roles</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let user of users()">
+                <td>{{ user.email }}</td>
+                <td>{{ user.displayName }}</td>
+                <td>{{ user.roles.join(', ') }}</td>
+                <td>
+                  <span class="badge" [class.text-bg-success]="user.isActive" [class.text-bg-secondary]="!user.isActive">
+                    {{ user.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn btn-sm" [class.btn-outline-danger]="user.isActive" [class.btn-outline-success]="!user.isActive" (click)="toggleStatus(user)">
+                    {{ user.isActive ? 'Disable' : 'Enable' }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ng-template #noUsers>
+            <div class="alert alert-info mb-0">No users found.</div>
+          </ng-template>
+        </div>
+      </div>
     </section>
-  `,
-  styles: `
-    .page { padding: 1rem; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #d0d0d0; padding: 0.5rem; text-align: left; }
   `,
 })
 export class AdminUsersPage {

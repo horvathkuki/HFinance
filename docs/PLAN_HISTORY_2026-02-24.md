@@ -134,3 +134,67 @@ Outstanding work after implementation pass:
 - Expand automated test coverage (backend + frontend + e2e).
 - Improve production hardening (validation consistency, failure-path handling, monitoring/runbooks).
 - Continue UI polish and advanced UX behaviors.
+
+## Plan 10 - Frontend Navigation Visibility (Auth-Only Dashboard Link)
+Status: Implemented.
+
+Goal:
+- Make `Dashboard` navigation visible only after login.
+
+Implemented behavior:
+- Logged out users see `Login` and `Register`.
+- Logged in users see `Dashboard`, `Account`, and `Logout`.
+- Admin users additionally see `Admin`.
+- Root route (`/`) and wildcard route now redirect to `/login`.
+- Route guards continue to protect direct access to private routes.
+
+Files impacted:
+- `frontend/src/app/app.html`
+- `frontend/src/app/app.routes.ts`
+
+## Plan 11 - Frontend Tab Navigation and Logic Split
+Status: Implemented.
+
+Goal:
+- Add frontend navigation/menu points:
+  - Dashboard
+  - Holdings
+  - Allocations
+  - History
+  - Snapshots
+  - Settings
+- Move current dashboard HTML/logic into corresponding tabs.
+
+Implemented behavior:
+- Authenticated users now navigate via the six requested tabs.
+- Existing dashboard was decomposed into page-specific routes/components.
+- Shared cross-tab portfolio state and refresh flow implemented via a workspace service.
+
+Files impacted:
+- `frontend/src/app/app.html`
+- `frontend/src/app/app.routes.ts`
+- `frontend/src/app/portfolio-workspace.service.ts`
+- `frontend/src/app/pages/dashboard.page.ts`
+- `frontend/src/app/pages/holdings.page.ts`
+- `frontend/src/app/pages/allocations.page.ts`
+- `frontend/src/app/pages/history.page.ts`
+- `frontend/src/app/pages/snapshots.page.ts`
+
+## Plan 12 - Frontend UI Upgrade (Bootstrap + ng-bootstrap)
+Status: Implemented.
+
+Decision:
+- Adopt `bootstrap` + `@ng-bootstrap/ng-bootstrap` for frontend UI consistency and Angular-native interactions.
+
+Implemented:
+- Bootstrap globally imported and design tokens added in `frontend/src/styles.css`.
+- Top navigation moved to responsive Bootstrap navbar with active route styling.
+- Page layouts refactored to Bootstrap cards/grids/forms/tables.
+- ng-bootstrap components integrated where useful:
+  - `ngbDropdown` for compact actions
+  - `ngbModal` for destructive confirmations
+  - `ngbToast` for feedback messages
+  - `ngbNav` for Settings sub-sections
+
+Follow-up:
+- Frontend bundle size increased and now exceeds configured warning budget; optimization/budget tuning needed.

@@ -1,160 +1,106 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { BaseChartDirective } from 'ng2-charts';
-import { Chart, ChartConfiguration, registerables } from 'chart.js';
-import { AnalyticsService } from '../analytics.service';
-import { GroupsService } from '../groups.service';
-import { PortfolioService } from '../portfolio.service';
-import { Holding, HoldingGroup, Portfolio, PortfolioAnalytics, Snapshot, TimeSeriesPoint } from '../models';
-
-Chart.register(...registerables);
+import { NgbDropdownModule, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { Portfolio } from '../models';
+import { PortfolioWorkspaceService } from '../portfolio-workspace.service';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, BaseChartDirective],
+  imports: [CommonModule, ReactiveFormsModule, NgbDropdownModule],
   template: `
-    <section class="page">
-      <h1>Portfolio Dashboard</h1>
-
-      <div class="cards">
-        <article>
-          <h2>Portfolios</h2>
-          <form [formGroup]="portfolioForm" (ngSubmit)="createPortfolio()">
-            <input type="text" placeholder="Portfolio name" formControlName="name" />
-            <input type="text" placeholder="Description" formControlName="description" />
-            <button type="submit">Create</button>
-          </form>
-          <ul>
-            <li *ngFor="let portfolio of portfolios()">
-              <button class="select" (click)="selectPortfolio(portfolio)">
-                {{ portfolio.name }}
-              </button>
-              <button class="delete" (click)="deletePortfolio(portfolio.id)">Delete</button>
-            </li>
-          </ul>
-        </article>
-
-        <article>
-          <h2>Groups</h2>
-          <form [formGroup]="groupForm" (ngSubmit)="createGroup()">
-            <input type="text" placeholder="Group name" formControlName="name" />
-            <button type="submit">Add Group</button>
-          </form>
-          <ul>
-            <li *ngFor="let group of groups()">
-              {{ group.name }}
-              <button class="delete" (click)="deleteGroup(group.id)">Delete</button>
-            </li>
-          </ul>
-        </article>
+    <section class="hf-page">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <h1 class="h3 mb-0">Dashboard</h1>
+        <span class="badge text-bg-primary" *ngIf="workspace.selectedPortfolio() as selected">
+          Active: {{ selected.name }}
+        </span>
       </div>
 
-      <article *ngIf="selectedPortfolio() as currentPortfolio">
-        <h2>{{ currentPortfolio.name }} - Holdings</h2>
-        <form [formGroup]="holdingForm" (ngSubmit)="addHolding()">
-          <input type="text" placeholder="Symbol" formControlName="symbol" />
-          <input type="number" step="0.0001" placeholder="Quantity" formControlName="quantity" />
-          <input
-            type="number"
-            step="0.01"
-            placeholder="Average purchase price"
-            formControlName="averagePurchasePrice"
-          />
-          <select formControlName="currency">
-            <option value="EUR">EUR</option>
-            <option value="USD">USD</option>
-            <option value="RON">RON</option>
-          </select>
-          <select formControlName="groupId">
-            <option *ngFor="let group of groups()" [value]="group.id">{{ group.name }}</option>
-          </select>
-          <button type="submit">Add holding</button>
-        </form>
-
-        <table *ngIf="holdings().length > 0">
-          <thead>
-            <tr>
-              <th>Symbol</th>
-              <th>Qty</th>
-              <th>Avg Price</th>
-              <th>Currency</th>
-              <th>Group</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let holding of holdings()">
-              <td>{{ holding.symbol }}</td>
-              <td>{{ holding.quantity }}</td>
-              <td>{{ holding.averagePurchasePrice }}</td>
-              <td>{{ holding.currency }}</td>
-              <td>{{ holding.groupName }}</td>
-              <td><button class="delete" (click)="deleteHolding(holding)">Delete</button></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div class="analytics" *ngIf="analytics() as metrics">
-          <p><strong>Base Currency:</strong> {{ metrics.baseCurrency }}</p>
-          <p><strong>Total Market Value:</strong> {{ metrics.totalMarketValueBase | number:'1.2-2' }}</p>
-          <p><strong>Total P/L:</strong> {{ metrics.totalUnrealizedPnLBase | number:'1.2-2' }}</p>
-          <p *ngIf="metrics.isPartial">Snapshot/analytics are partial. Missing symbols: {{ metrics.missingSymbolsCount }}</p>
-          <button (click)="takeSnapshot()">Take Snapshot</button>
-        </div>
-
-        <div class="charts">
-          <div>
-            <h3>Portfolio Value Over Time</h3>
-            <canvas baseChart [data]="valueChartData" [type]="'line'" [options]="lineOptions"></canvas>
-          </div>
-          <div>
-            <h3>Allocation by Group</h3>
-            <canvas baseChart [data]="allocationChartData" [type]="'doughnut'"></canvas>
-          </div>
-          <div>
-            <h3>Unrealized P/L Trend</h3>
-            <canvas baseChart [data]="pnlChartData" [type]="'line'" [options]="lineOptions"></canvas>
+      <div class="row g-3">
+        <div class="col-12 col-xl-6">
+          <div class="card hf-card h-100">
+            <div class="card-body">
+              <h2 class="h5 mb-3">Portfolios</h2>
+              <form [formGroup]="portfolioForm" (ngSubmit)="createPortfolio()" class="row g-2 mb-3">
+                <div class="col-12 col-md-4">
+                  <input class="form-control" type="text" placeholder="Portfolio name" formControlName="name" />
+                </div>
+                <div class="col-12 col-md-5">
+                  <input class="form-control" type="text" placeholder="Description" formControlName="description" />
+                </div>
+                <div class="col-12 col-md-3">
+                  <button class="btn btn-primary w-100" type="submit" [disabled]="portfolioForm.invalid">Create</button>
+                </div>
+              </form>
+              <div class="list-group">
+                <div class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let portfolio of workspace.portfolios()">
+                  <button class="btn btn-link p-0 text-decoration-none fw-semibold" (click)="selectPortfolio(portfolio)">
+                    {{ portfolio.name }}
+                  </button>
+                  <div ngbDropdown container="body">
+                    <button class="btn btn-sm btn-outline-secondary" ngbDropdownToggle>Actions</button>
+                    <div ngbDropdownMenu>
+                      <button ngbDropdownItem (click)="confirmDeletePortfolio(portfolio)">Delete</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <h3>Snapshots</h3>
-        <ul>
-          <li *ngFor="let snapshot of snapshots()">
-            {{ snapshot.capturedAtUtc | date:'medium' }}:
-            {{ snapshot.totalMarketValueBase | number:'1.2-2' }} {{ snapshot.baseCurrency }}
-            <span *ngIf="snapshot.isPartial">(partial)</span>
-          </li>
-        </ul>
-      </article>
+        <div class="col-12 col-xl-6">
+          <div class="card hf-card h-100">
+            <div class="card-body">
+              <h2 class="h5 mb-3">Groups</h2>
+              <form [formGroup]="groupForm" (ngSubmit)="createGroup()" class="row g-2 mb-3">
+                <div class="col-12 col-md-8">
+                  <input class="form-control" type="text" placeholder="Group name" formControlName="name" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <button class="btn btn-primary w-100" type="submit" [disabled]="groupForm.invalid">Add Group</button>
+                </div>
+              </form>
+              <div class="list-group">
+                <div class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let group of workspace.groups()">
+                  <span>{{ group.name }}</span>
+                  <button class="btn btn-sm btn-outline-danger" (click)="confirmDeleteGroup(group.id, group.name)">Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3" *ngIf="workspace.selectedPortfolio() && workspace.analytics() as metrics">
+        <div class="col-12">
+          <div class="card hf-card">
+            <div class="card-body">
+              <h2 class="h5 mb-3">Portfolio Summary</h2>
+              <div class="row row-cols-1 row-cols-md-5 g-3">
+                <div class="col"><div class="small text-muted">Base Currency</div><div class="fw-semibold">{{ metrics.baseCurrency }}</div></div>
+                <div class="col"><div class="small text-muted">Holdings</div><div class="fw-semibold">{{ workspace.holdings().length }}</div></div>
+                <div class="col"><div class="small text-muted">Market Value</div><div class="fw-semibold">{{ metrics.totalMarketValueBase | number:'1.2-2' }}</div></div>
+                <div class="col"><div class="small text-muted">Unrealized P/L</div><div class="fw-semibold">{{ metrics.totalUnrealizedPnLBase | number:'1.2-2' }}</div></div>
+                <div class="col"><div class="small text-muted">P/L %</div><div class="fw-semibold">{{ metrics.totalUnrealizedPnLPercent | number:'1.2-2' }}%</div></div>
+              </div>
+              <div class="alert alert-warning mt-3 mb-0" *ngIf="metrics.isPartial">
+                Snapshot/analytics are partial. Missing symbols: {{ metrics.missingSymbolsCount }}.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
-  `,
-  styles: `
-    .page { padding: 1rem; display: grid; gap: 1rem; }
-    .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    article { border: 1px solid #d7d7d7; padding: 1rem; border-radius: 6px; }
-    form { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
-    input, select, button { padding: 0.45rem 0.6rem; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #d0d0d0; padding: 0.4rem; }
-    .delete { background: #fff2f2; }
-    .select { background: #f5f8ff; margin-right: 0.5rem; }
-    .charts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-    @media (max-width: 1100px) {
-      .cards, .charts { grid-template-columns: 1fr; }
-    }
   `,
 })
 export class DashboardPage {
   private readonly formBuilder = inject(FormBuilder);
-
-  readonly portfolios = signal<Portfolio[]>([]);
-  readonly groups = signal<HoldingGroup[]>([]);
-  readonly holdings = signal<Holding[]>([]);
-  readonly snapshots = signal<Snapshot[]>([]);
-  readonly analytics = signal<PortfolioAnalytics | null>(null);
-  readonly selectedPortfolio = signal<Portfolio | null>(null);
+  private readonly modalService = inject(NgbModal);
+  readonly workspace = inject(PortfolioWorkspaceService);
 
   readonly portfolioForm = this.formBuilder.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -165,26 +111,8 @@ export class DashboardPage {
     name: ['', [Validators.required, Validators.minLength(2)]],
   });
 
-  readonly holdingForm = this.formBuilder.group({
-    symbol: ['', [Validators.required]],
-    quantity: [1, [Validators.required, Validators.min(0.0001)]],
-    averagePurchasePrice: [1, [Validators.required, Validators.min(0.01)]],
-    currency: ['USD', [Validators.required]],
-    groupId: [0, [Validators.required]],
-  });
-
-  valueChartData: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [{ data: [], label: 'Market Value' }] };
-  pnlChartData: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [{ data: [], label: 'Unrealized P/L' }] };
-  allocationChartData: ChartConfiguration<'doughnut'>['data'] = { labels: [], datasets: [{ data: [] }] };
-  lineOptions: ChartConfiguration<'line'>['options'] = { responsive: true, maintainAspectRatio: false };
-
-  constructor(
-    private readonly portfolioService: PortfolioService,
-    private readonly groupsService: GroupsService,
-    private readonly analyticsService: AnalyticsService
-  ) {
-    this.loadPortfolios();
-    this.loadGroups();
+  constructor() {
+    this.workspace.initialize();
   }
 
   createPortfolio(): void {
@@ -192,16 +120,12 @@ export class DashboardPage {
       return;
     }
     const value = this.portfolioForm.getRawValue();
-    this.portfolioService.createPortfolio(value.name ?? '', value.description ?? '').subscribe({
-      next: () => {
-        this.portfolioForm.reset({ name: '', description: '' });
-        this.loadPortfolios();
-      },
-    });
+    this.workspace.createPortfolio(value.name ?? '', value.description ?? '');
+    this.portfolioForm.reset({ name: '', description: '' });
   }
 
   deletePortfolio(id: number): void {
-    this.portfolioService.deletePortfolio(id).subscribe({ next: () => this.loadPortfolios() });
+    this.workspace.deletePortfolio(id);
   }
 
   createGroup(): void {
@@ -209,117 +133,41 @@ export class DashboardPage {
       return;
     }
     const value = this.groupForm.getRawValue();
-    this.groupsService.createGroup(value.name ?? '').subscribe({
-      next: () => {
-        this.groupForm.reset({ name: '' });
-        this.loadGroups();
-      },
-    });
+    this.workspace.createGroup(value.name ?? '');
+    this.groupForm.reset({ name: '' });
   }
 
   deleteGroup(id: number): void {
-    this.groupsService.deleteGroup(id).subscribe({
-      next: () => {
-        this.loadGroups();
-        this.loadHoldingsAndAnalytics();
-      },
-    });
+    this.workspace.deleteGroup(id);
   }
 
   selectPortfolio(portfolio: Portfolio): void {
-    this.selectedPortfolio.set(portfolio);
-    this.loadHoldingsAndAnalytics();
+    this.workspace.selectPortfolio(portfolio);
   }
 
-  addHolding(): void {
-    const portfolio = this.selectedPortfolio();
-    if (!portfolio || this.holdingForm.invalid) {
-      return;
-    }
-    const value = this.holdingForm.getRawValue();
-    this.portfolioService
-      .addHolding(portfolio.id, {
-        symbol: value.symbol ?? '',
-        quantity: Number(value.quantity ?? 0),
-        averagePurchasePrice: Number(value.averagePurchasePrice ?? 0),
-        currency: value.currency ?? 'USD',
-        groupId: Number(value.groupId ?? 0),
-      })
-      .subscribe({ next: () => this.loadHoldingsAndAnalytics() });
+  confirmDeletePortfolio(portfolio: Portfolio): void {
+    const modalRef = this.modalService.open(ConfirmDialogComponent, { centered: true });
+    modalRef.componentInstance.title = 'Delete Portfolio';
+    modalRef.componentInstance.body = `Delete portfolio "${portfolio.name}"? This removes all related holdings and snapshots.`;
+    modalRef.componentInstance.confirmLabel = 'Delete';
+    modalRef.componentInstance.confirmButtonClass = 'btn-danger';
+    modalRef.result.then((confirmed: boolean) => {
+      if (confirmed) {
+        this.deletePortfolio(portfolio.id);
+      }
+    }).catch(() => {});
   }
 
-  deleteHolding(holding: Holding): void {
-    const portfolio = this.selectedPortfolio();
-    if (!portfolio) {
-      return;
-    }
-    this.portfolioService
-      .deleteHolding(portfolio.id, holding.id)
-      .subscribe({ next: () => this.loadHoldingsAndAnalytics() });
-  }
-
-  takeSnapshot(): void {
-    const portfolio = this.selectedPortfolio();
-    if (!portfolio) {
-      return;
-    }
-    this.analyticsService.createSnapshot(portfolio.id).subscribe({
-      next: () => this.loadHoldingsAndAnalytics(),
-    });
-  }
-
-  private loadPortfolios(): void {
-    this.portfolioService.getPortfolios().subscribe({
-      next: (items) => {
-        this.portfolios.set(items);
-        if (!this.selectedPortfolio() && items.length > 0) {
-          this.selectPortfolio(items[0]);
-        }
-      },
-    });
-  }
-
-  private loadGroups(): void {
-    this.groupsService.getGroups().subscribe({
-      next: (items) => {
-        this.groups.set(items);
-        if (items.length > 0 && !this.holdingForm.value.groupId) {
-          this.holdingForm.patchValue({ groupId: items[0].id });
-        }
-      },
-    });
-  }
-
-  private loadHoldingsAndAnalytics(): void {
-    const portfolio = this.selectedPortfolio();
-    if (!portfolio) {
-      return;
-    }
-    this.portfolioService.getHoldings(portfolio.id).subscribe({ next: (items) => this.holdings.set(items) });
-    this.analyticsService.getPortfolioAnalytics(portfolio.id).subscribe({
-      next: (data) => {
-        this.analytics.set(data);
-        this.allocationChartData = {
-          labels: data.groupAllocations.map((entry) => entry.groupName),
-          datasets: [{ data: data.groupAllocations.map((entry) => entry.marketValueBase) }],
-        };
-      },
-    });
-    this.analyticsService.getSnapshots(portfolio.id).subscribe({ next: (items) => this.snapshots.set(items) });
-    this.analyticsService.getTimeSeries(portfolio.id).subscribe({
-      next: (points) => this.updateTimeSeriesCharts(points),
-    });
-  }
-
-  private updateTimeSeriesCharts(points: TimeSeriesPoint[]): void {
-    const labels = points.map((point) => new Date(point.capturedAtUtc).toLocaleString());
-    this.valueChartData = {
-      labels,
-      datasets: [{ label: 'Market Value', data: points.map((point) => point.totalMarketValueBase) }],
-    };
-    this.pnlChartData = {
-      labels,
-      datasets: [{ label: 'Unrealized P/L', data: points.map((point) => point.totalUnrealizedPnLBase) }],
-    };
+  confirmDeleteGroup(groupId: number, groupName: string): void {
+    const modalRef = this.modalService.open(ConfirmDialogComponent, { centered: true });
+    modalRef.componentInstance.title = 'Delete Group';
+    modalRef.componentInstance.body = `Delete group "${groupName}"? Holdings will be moved to Uncategorized.`;
+    modalRef.componentInstance.confirmLabel = 'Delete';
+    modalRef.componentInstance.confirmButtonClass = 'btn-danger';
+    modalRef.result.then((confirmed: boolean) => {
+      if (confirmed) {
+        this.deleteGroup(groupId);
+      }
+    }).catch(() => {});
   }
 }

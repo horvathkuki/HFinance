@@ -1,15 +1,59 @@
-<div class="layout">
-  <header>
-    <h1>HFinance</h1>
-    <nav>
-      <a routerLink="/dashboard">Dashboard</a>
-      <a routerLink="/account" *ngIf="authService.isAuthenticated()">Account</a>
-      <a routerLink="/admin/users" *ngIf="authService.isAdmin()">Admin</a>
-      <a routerLink="/login" *ngIf="!authService.isAuthenticated()">Login</a>
-      <button *ngIf="authService.isAuthenticated()" (click)="logout()">Logout</button>
-    </nav>
-  </header>
-  <main>
-    <router-outlet />
+<div class="layout d-flex flex-column min-vh-100">
+  <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm sticky-top">
+    <div class="container-fluid hf-page py-2">
+      <a class="navbar-brand fw-semibold" routerLink="/dashboard" *ngIf="authService.isAuthenticated()">HFinance</a>
+      <a class="navbar-brand fw-semibold" routerLink="/login" *ngIf="!authService.isAuthenticated()">HFinance</a>
+
+      <button
+        class="navbar-toggler"
+        type="button"
+        aria-controls="navbarContent"
+        [attr.aria-expanded]="!isNavbarCollapsed"
+        (click)="isNavbarCollapsed = !isNavbarCollapsed"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div [ngbCollapse]="isNavbarCollapsed" class="collapse navbar-collapse" id="navbarContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0" *ngIf="authService.isAuthenticated()">
+          <li class="nav-item"><a class="nav-link" routerLink="/dashboard" routerLinkActive="active">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" routerLink="/holdings" routerLinkActive="active">Holdings</a></li>
+          <li class="nav-item"><a class="nav-link" routerLink="/allocations" routerLinkActive="active">Allocations</a></li>
+          <li class="nav-item"><a class="nav-link" routerLink="/history" routerLinkActive="active">History</a></li>
+          <li class="nav-item"><a class="nav-link" routerLink="/snapshots" routerLinkActive="active">Snapshots</a></li>
+          <li class="nav-item"><a class="nav-link" routerLink="/settings" routerLinkActive="active">Settings</a></li>
+          <li class="nav-item" *ngIf="authService.isAdmin()">
+            <a class="nav-link" routerLink="/admin/users" routerLinkActive="active">Admin</a>
+          </li>
+        </ul>
+
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0" *ngIf="!authService.isAuthenticated()">
+          <li class="nav-item"><a class="nav-link" routerLink="/login" routerLinkActive="active">Login</a></li>
+          <li class="nav-item"><a class="nav-link" routerLink="/register" routerLinkActive="active">Register</a></li>
+        </ul>
+
+        <button class="btn btn-outline-danger btn-sm ms-lg-3" *ngIf="authService.isAuthenticated()" (click)="logout()">
+          Logout
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="flex-grow-1">
+    <router-outlet></router-outlet>
   </main>
+
+  <div class="toast-container position-fixed top-0 end-0 p-3">
+    <ngb-toast
+      *ngFor="let message of toastService.messages()"
+      [autohide]="true"
+      [delay]="3000"
+      [class]="
+        'text-bg-' + (message.variant === 'danger' ? 'danger' : message.variant === 'success' ? 'success' : message.variant === 'warning' ? 'warning' : 'primary')
+      "
+      (hidden)="removeToast(message.id)"
+    >
+      {{ message.text }}
+    </ngb-toast>
+  </div>
 </div>

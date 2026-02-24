@@ -1,46 +1,77 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-account-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, NgbNavModule],
   template: `
-    <section class="page">
-      <h1>Account Settings</h1>
+    <section class="hf-page">
+      <h1 class="h3 mb-3">Settings</h1>
 
-      <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
-        <h2>Profile</h2>
-        <label>Email <input type="email" formControlName="email" /></label>
-        <label>Display Name <input type="text" formControlName="displayName" /></label>
-        <label>
-          Base Currency
-          <select formControlName="baseCurrency">
-            <option value="EUR">EUR</option>
-            <option value="USD">USD</option>
-            <option value="RON">RON</option>
-          </select>
-        </label>
-        <button type="submit">Save Profile</button>
-      </form>
+      <div class="alert alert-info" *ngIf="message()">{{ message() }}</div>
 
-      <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
-        <h2>Password</h2>
-        <label>Current Password <input type="password" formControlName="currentPassword" /></label>
-        <label>New Password <input type="password" formControlName="newPassword" /></label>
-        <button type="submit">Change Password</button>
-      </form>
-
-      <p>{{ message() }}</p>
+      <ul ngbNav #settingsNav="ngbNav" class="nav-tabs">
+        <li ngbNavItem>
+          <button ngbNavLink>Profile</button>
+          <ng-template ngbNavContent>
+            <div class="card hf-card mt-3">
+              <div class="card-body">
+              <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="row g-3">
+                <div class="col-12">
+                  <label class="form-label">Email</label>
+                  <input class="form-control" type="email" formControlName="email" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Display Name</label>
+                  <input class="form-control" type="text" formControlName="displayName" />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Base Currency</label>
+                  <select class="form-select" formControlName="baseCurrency">
+                    <option value="EUR">EUR</option>
+                    <option value="USD">USD</option>
+                    <option value="RON">RON</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <button class="btn btn-primary" type="submit" [disabled]="profileForm.invalid">Save Profile</button>
+                </div>
+              </form>
+            </div>
+            </div>
+          </ng-template>
+        </li>
+        <li ngbNavItem>
+          <button ngbNavLink>Password</button>
+          <ng-template ngbNavContent>
+            <div class="card hf-card mt-3">
+              <div class="card-body">
+              <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="row g-3">
+                <div class="col-12">
+                  <label class="form-label">Current Password</label>
+                  <input class="form-control" type="password" formControlName="currentPassword" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label">New Password</label>
+                  <input class="form-control" type="password" formControlName="newPassword" />
+                </div>
+                <div class="col-12">
+                  <button class="btn btn-outline-primary" type="submit" [disabled]="passwordForm.invalid">
+                    Change Password
+                  </button>
+                </div>
+              </form>
+            </div>
+            </div>
+          </ng-template>
+        </li>
+      </ul>
+      <div [ngbNavOutlet]="settingsNav"></div>
     </section>
-  `,
-  styles: `
-    .page { max-width: 700px; margin: 2rem auto; display: grid; gap: 1.25rem; }
-    form { border: 1px solid #d0d0d0; padding: 1rem; display: grid; gap: 0.5rem; }
-    label { display: grid; gap: 0.2rem; }
-    input, select { padding: 0.45rem; }
   `,
 })
 export class AccountPage {

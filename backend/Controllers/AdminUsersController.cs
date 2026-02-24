@@ -185,4 +185,22 @@ public class AdminUsersController : ControllerBase
             ResetToken = token
         });
     }
+
+    [HttpPost("{id}/reset-password/confirm")]
+    public async Task<IActionResult> ConfirmResetPassword(string id, AdminResetPasswordConfirmRequest request)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user is null)
+        {
+            return NotFound(new ApiErrorResponse("user_not_found", "User not found.", HttpContext.TraceIdentifier));
+        }
+
+        var result = await _userManager.ResetPasswordAsync(user, request.ResetToken, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new ApiErrorResponse("password_reset_failed", string.Join("; ", result.Errors.Select(e => e.Description)), HttpContext.TraceIdentifier));
+        }
+
+        return NoContent();
+    }
 }

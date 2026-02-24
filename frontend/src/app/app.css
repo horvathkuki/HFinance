@@ -1,0 +1,43 @@
+:host {
+  display: block;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #1d2a33;
+}
+
+.layout {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f4fbff 0%, #ffffff 45%);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #dfeaf1;
+  background: #ffffffdd;
+  backdrop-filter: blur(6px);
+}
+
+nav {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+a {
+  text-decoration: none;
+  color: #0f4c75;
+  font-weight: 600;
+}
+
+button {
+  border: 1px solid #c8d8e5;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+main {
+  padding: 0.5rem 1rem 1.5rem;
+}

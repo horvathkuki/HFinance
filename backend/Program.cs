@@ -18,6 +18,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -78,6 +80,10 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IdentitySeedService>();
+builder.Services.AddScoped<IMarketDataService, MarketDataService>();
+builder.Services.AddScoped<IFxRateService, EcbFxRateService>();
+builder.Services.AddScoped<IPortfolioAnalyticsService, PortfolioAnalyticsService>();
+builder.Services.AddScoped<IHoldingGroupService, HoldingGroupService>();
 
 var app = builder.Build();
 

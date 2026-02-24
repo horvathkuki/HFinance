@@ -1,63 +1,48 @@
+using backend.Contracts;
+using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using YahooFinanceApi;
 
 namespace backend.Controllers;
 
 [ApiController]
 [Authorize]
-[Route("api/[controller]")]
+[Route("api/v1/market")]
 public class StocksController : ControllerBase
 {
-    [HttpGet("quote/{symbol}")]
-    public async Task<IActionResult> GetQuote(string symbol)
-    {
-        try
-        {
-            var securities = await Yahoo.Symbols(symbol).Fields(
-                Field.Symbol, Field.RegularMarketPrice, Field.FiftyTwoWeekHigh,
-                Field.FiftyTwoWeekLow, Field.LongName, Field.ShortName,
-                Field.MarketCap, Field.Currency).QueryAsync();
+    private readonly IMarketDataService _marketDataService;
 
-            var quote = securities[symbol];
-            return Ok(new
-            {
-                Symbol = quote[Field.Symbol],
-                Price = quote[Field.RegularMarketPrice],
-                High52Week = quote[Field.FiftyTwoWeekHigh],
-                Low52Week = quote[Field.FiftyTwoWeekLow],
-                CompanyName = quote[Field.LongName] ?? quote[Field.ShortName],
-                MarketCap = quote[Field.MarketCap],
-                Currency = quote[Field.Currency]
-            });
-        }
-        catch (Exception ex)
+    public StocksController(IMarketDataService marketDataService)
+    {
+        _marketDataService = marketDataService;
+    }
+
+    [HttpGet("quote/{symbol}")]
+    public async Task<IActionResult> GetQuote(string symbol, CancellationToken cancellationToken)
+    {
+        var quote = await _marketDataService.GetQuoteAsync(symbol, cancellationToken);
+        if (quote is null)
         {
-            return BadRequest($"Error fetching quote: {ex.Message}");
+            return NotFound(new ApiErrorResponse("quote_not_found", "Quote could not be fetched for this symbol.", HttpContext.TraceIdentifier));
         }
+
+        return Ok(quote);
     }
 
     [HttpGet("historical/{symbol}")]
-    public async Task<IActionResult> GetHistorical(string symbol, [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+    public async Task<IActionResult> GetHistorical(string symbol, [FromQuery] DateTime startDate, [FromQuery] DateTime endDate, CancellationToken cancellationToken)
     {
-        try
+        if (endDate < startDate)
         {
-            var history = await Yahoo.GetHistoricalAsync(symbol, startDate, endDate, Period.Daily);
-            var data = history.Select(c => new
-            {
-                Date = c.DateTime,
-                Open = c.Open,
-                High = c.High,
-                Low = c.Low,
-                Close = c.Close,
-                Volume = c.Volume,
-                AdjustedClose = c.AdjustedClose
-            });
-            return Ok(data);
+            return BadRequest(new ApiErrorResponse("invalid_date_range", "endDate must be after startDate.", HttpContext.TraceIdentifier));
         }
-        catch (Exception ex)
+
+        if ((endDate - startDate).TotalDays > 3650)
         {
-            return BadRequest($"Error fetching historical data: {ex.Message}");
+            return BadRequest(new ApiErrorResponse("date_range_too_large", "Requested range is too large.", HttpContext.TraceIdentifier));
         }
+
+        var data = await _marketDataService.GetHistoricalAsync(symbol, startDate, endDate, cancellationToken);
+        return Ok(data);
     }
 }

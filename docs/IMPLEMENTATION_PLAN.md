@@ -4,6 +4,46 @@
 This document is the source of truth for implementing HFinance MVP.
 It is written to be easy to follow for a mid-level developer.
 
+## Related Plan Files
+- `docs/PLAN_HISTORY_2026-02-24.md` (complete planning history from 2026-02-24)
+- `docs/ADR/0001-fx-source-ecb.md`
+- `docs/ADR/0002-snapshot-policy.md`
+- `docs/ADR/0003-grouping-model.md`
+
+## Current Implementation Status (Updated 2026-02-24)
+### Implemented
+- Security foundation: ASP.NET Identity + JWT + role policy + global exception handler.
+- User management APIs: auth/register/login, account profile/password, admin user list/status/roles/reset-password.
+- Ownership baseline: portfolio and holdings access filtered by authenticated user.
+- Environment-specific DB config files:
+  - `appsettings.Development.json` (local `.\SQLEXPRESS01`)
+  - `appsettings.Staging.json` (placeholder)
+  - `appsettings.Production.json` (placeholder)
+- Domain expansion:
+  - Holding groups (`HoldingGroup`) and groups API
+  - Holding currency support (`EUR|USD|RON`)
+  - Portfolio snapshots (`PortfolioSnapshot`)
+  - Analytics and timeseries endpoints
+  - Market quote/history service layer with cache
+  - ECB FX service with cache + fallback
+- Frontend MVP shell:
+  - Auth service + interceptor + guards
+  - Login/Register/Account/Admin Users/Dashboard pages
+  - Portfolio/holding/group/snapshot flows
+  - Charts via `ng2-charts + Chart.js`
+
+### Partially Implemented / Needs Hardening
+- Backend APIs exist but still need stronger production validation/error standardization across all endpoints.
+- Frontend UX is functional but still basic; design polish and deeper state/error handling remain.
+- API coverage tests are not fully implemented yet (unit + integration + e2e pending).
+- Deployment/runbook docs need a complete end-to-end operational checklist.
+
+### Immediate Next Steps
+1. Add backend automated tests for auth, ownership, groups, snapshots, analytics, and FX fallback.
+2. Add frontend tests for auth/session flows, dashboard behaviors, and chart data rendering.
+3. Run and verify all EF migrations in target environments (`Development`, `Staging`, `Production`).
+4. Normalize any remaining legacy route usage so all endpoints are consistently under `/api/v1`.
+
 ## Engineering Readability Standards
 1. Use clear, explicit names (`portfolioSnapshotService`, not abbreviations).
 2. Keep methods focused and short; move complex logic into dedicated services/helpers.

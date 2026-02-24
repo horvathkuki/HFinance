@@ -238,6 +238,13 @@ namespace backend.Migrations
                     b.Property<decimal>("AveragePurchasePrice")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("int");
+
                     b.Property<int>("PortfolioId")
                         .HasColumnType("int");
 
@@ -253,9 +260,49 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("GroupId");
+
                     b.HasIndex("PortfolioId");
 
-                    b.ToTable("Holdings");
+                    b.ToTable("Holdings", t =>
+                        {
+                            t.HasCheckConstraint("CK_Holdings_Currency", "[Currency] IN ('EUR', 'USD', 'RON')");
+                        });
+                });
+
+            modelBuilder.Entity("backend.Models.HoldingGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("HoldingGroups");
                 });
 
             modelBuilder.Entity("backend.Models.Portfolio", b =>
@@ -285,6 +332,59 @@ namespace backend.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Portfolios");
+                });
+
+            modelBuilder.Entity("backend.Models.PortfolioSnapshot", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BaseCurrency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CapturedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("EurRonRate")
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal>("EurUsdRate")
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<DateTime>("FxTimestampUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsPartial")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MissingSymbolsCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PortfolioId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalCostBasisBase")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalMarketValueBase")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalUnrealizedPnLBase")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PortfolioId", "CapturedAtUtc");
+
+                    b.ToTable("PortfolioSnapshots");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -340,8 +440,27 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Models.Holding", b =>
                 {
+                    b.HasOne("backend.Models.HoldingGroup", "Group")
+                        .WithMany("Holdings")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("backend.Models.Portfolio", "Portfolio")
                         .WithMany("Holdings")
+                        .HasForeignKey("PortfolioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Portfolio");
+                });
+
+            modelBuilder.Entity("backend.Models.PortfolioSnapshot", b =>
+                {
+                    b.HasOne("backend.Models.Portfolio", "Portfolio")
+                        .WithMany("Snapshots")
                         .HasForeignKey("PortfolioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -349,9 +468,16 @@ namespace backend.Migrations
                     b.Navigation("Portfolio");
                 });
 
+            modelBuilder.Entity("backend.Models.HoldingGroup", b =>
+                {
+                    b.Navigation("Holdings");
+                });
+
             modelBuilder.Entity("backend.Models.Portfolio", b =>
                 {
                     b.Navigation("Holdings");
+
+                    b.Navigation("Snapshots");
                 });
 #pragma warning restore 612, 618
         }

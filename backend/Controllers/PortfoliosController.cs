@@ -1,4 +1,5 @@
 using backend.Data;
+using backend.Contracts.Portfolio;
 using backend.Models;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +10,7 @@ namespace backend.Controllers;
 
 [ApiController]
 [Authorize]
-[Route("api/[controller]")]
+[Route("api/v1/portfolios")]
 public class PortfoliosController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -20,7 +21,7 @@ public class PortfoliosController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Portfolio>>> GetPortfolios()
+    public async Task<ActionResult<IEnumerable<PortfolioDto>>> GetPortfolios()
     {
         var userId = User.GetUserId();
         if (string.IsNullOrWhiteSpace(userId))
@@ -28,14 +29,24 @@ public class PortfoliosController : ControllerBase
             return Unauthorized();
         }
 
-        return await _context.Portfolios
-            .Include(p => p.Holdings)
+        var portfolios = await _context.Portfolios
+            .AsNoTracking()
             .Where(p => p.UserId == userId)
+            .OrderByDescending(p => p.CreatedDate)
+            .Select(portfolio => new PortfolioDto
+            {
+                Id = portfolio.Id,
+                Name = portfolio.Name,
+                Description = portfolio.Description,
+                CreatedDate = portfolio.CreatedDate
+            })
             .ToListAsync();
+
+        return Ok(portfolios);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Portfolio>> GetPortfolio(int id)
+    public async Task<ActionResult<PortfolioDto>> GetPortfolio(int id)
     {
         var userId = User.GetUserId();
         if (string.IsNullOrWhiteSpace(userId))
@@ -44,17 +55,24 @@ public class PortfoliosController : ControllerBase
         }
 
         var portfolio = await _context.Portfolios
-            .Include(p => p.Holdings)
+            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
         if (portfolio == null)
         {
             return NotFound();
         }
-        return portfolio;
+
+        return Ok(new PortfolioDto
+        {
+            Id = portfolio.Id,
+            Name = portfolio.Name,
+            Description = portfolio.Description,
+            CreatedDate = portfolio.CreatedDate
+        });
     }
 
     [HttpPost]
-    public async Task<ActionResult<Portfolio>> CreatePortfolio(Portfolio portfolio)
+    public async Task<ActionResult<PortfolioDto>> CreatePortfolio(CreatePortfolioRequest request)
     {
         var userId = User.GetUserId();
         if (string.IsNullOrWhiteSpace(userId))
@@ -62,14 +80,28 @@ public class PortfoliosController : ControllerBase
             return Unauthorized();
         }
 
+        var portfolio = new Portfolio
+        {
+            Name = request.Name.Trim(),
+            Description = request.Description?.Trim(),
+            CreatedDate = DateTime.UtcNow
+        };
         portfolio.UserId = userId;
         _context.Portfolios.Add(portfolio);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetPortfolio), new { id = portfolio.Id }, portfolio);
+
+        var dto = new PortfolioDto
+        {
+            Id = portfolio.Id,
+            Name = portfolio.Name,
+            Description = portfolio.Description,
+            CreatedDate = portfolio.CreatedDate
+        };
+        return CreatedAtAction(nameof(GetPortfolio), new { id = portfolio.Id }, dto);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdatePortfolio(int id, Portfolio portfolio)
+    public async Task<IActionResult> UpdatePortfolio(int id, UpdatePortfolioRequest request)
     {
         var userId = User.GetUserId();
         if (string.IsNullOrWhiteSpace(userId))
@@ -77,33 +109,15 @@ public class PortfoliosController : ControllerBase
             return Unauthorized();
         }
 
-        if (id != portfolio.Id)
-        {
-            return BadRequest();
-        }
-
-        if (!await PortfolioExists(id, userId))
+        var portfolio = await _context.Portfolios.FirstOrDefaultAsync(item => item.Id == id && item.UserId == userId);
+        if (portfolio is null)
         {
             return NotFound();
         }
 
-        portfolio.UserId = userId;
-        _context.Entry(portfolio).State = EntityState.Modified;
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!await PortfolioExists(id, userId))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
+        portfolio.Name = request.Name.Trim();
+        portfolio.Description = request.Description?.Trim();
+        await _context.SaveChangesAsync();
         return NoContent();
     }
 
@@ -126,8 +140,4 @@ public class PortfoliosController : ControllerBase
         return NoContent();
     }
 
-    private Task<bool> PortfolioExists(int id, string userId)
-    {
-        return _context.Portfolios.AnyAsync(e => e.Id == id && e.UserId == userId);
-    }
 }

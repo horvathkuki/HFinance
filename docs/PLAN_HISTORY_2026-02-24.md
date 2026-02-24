@@ -198,3 +198,39 @@ Implemented:
 
 Follow-up:
 - Frontend bundle size increased and now exceeds configured warning budget; optimization/budget tuning needed.
+
+## Plan 13 - Holdings Full Edit Flow + Icon Actions
+Status: Implemented in code (build verification pending local environment fix).
+
+Goal:
+- Allow editing of all holding properties from frontend through backend.
+- Add compact icon actions in holdings table.
+
+Implemented:
+- Frontend holdings table now provides icon buttons for edit and delete.
+- Holdings page form supports create + edit mode with cancel/reset behavior.
+- Editable property coverage:
+  - `symbol`
+  - `quantity`
+  - `averagePurchasePrice`
+  - `currency`
+  - `groupId`
+  - `purchaseDate`
+- Workspace/service layer now calls holding update API and refreshes shared state.
+- Backend already supported full update via:
+  - `PUT /api/v1/portfolios/{portfolioId}/holdings/{id}`
+  - `UpdateHoldingRequest : CreateHoldingRequest` (same editable property set).
+
+Validation note:
+- Frontend compile check (`npm run build`) currently fails in this machine/session with `spawn EPERM` before compilation completes.
+
+## Plan 14 - Move Allocation/Exposure Charts to Dashboard
+Status: Implemented.
+
+Goal:
+- Move "Allocation by Group" and "Exposure by Currency" visuals from `Allocations` to `Dashboard`.
+
+Implemented:
+- `Dashboard` now renders both charts below portfolio summary.
+- `Allocations` no longer renders these charts and remains dedicated to portfolio/group management.
+- Chart helper methods were moved from allocations page component into dashboard page component.

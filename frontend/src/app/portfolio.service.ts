@@ -36,6 +36,7 @@ export class PortfolioService {
       averagePurchasePrice: number;
       currency: string;
       groupId: number;
+      purchaseDate?: string;
     }
   ): Observable<Holding> {
     return this.httpClient.post<Holding>(`${API_BASE_URL}/portfolios/${portfolioId}/holdings`, payload);
@@ -50,6 +51,7 @@ export class PortfolioService {
       averagePurchasePrice: number;
       currency: string;
       groupId: number;
+      purchaseDate?: string;
     }
   ): Observable<void> {
     return this.httpClient.put<void>(

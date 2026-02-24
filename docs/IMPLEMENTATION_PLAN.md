@@ -43,11 +43,20 @@ It is written to be easy to follow for a mid-level developer.
     - `Snapshots`
     - `Settings`
   - Dashboard logic split into tab-specific pages with shared workspace state service.
+  - Dashboard now contains the portfolio summary plus:
+    - Allocation by Group chart
+    - Exposure by Currency chart
+  - Allocations tab now focuses on portfolio/group management actions.
   - Bootstrap + ng-bootstrap UI system rollout:
     - Bootstrap global styles and design tokens added
     - Navbar migrated to responsive Bootstrap navbar with active-link highlighting
     - Forms/tables/cards migrated to Bootstrap structure across pages
     - ng-bootstrap interactions added (`ngbDropdown`, `ngbModal`, `ngbToast`, `ngbNav`)
+  - Holdings management UX upgrade:
+    - Holdings table now includes icon actions for edit/delete
+    - Holding edit mode supports all editable properties end-to-end:
+      `symbol`, `quantity`, `averagePurchasePrice`, `currency`, `groupId`, `purchaseDate`
+    - Frontend uses the existing `PUT /api/v1/portfolios/{portfolioId}/holdings/{id}` backend flow for updates
 
 ### Partially Implemented / Needs Hardening
 - Backend APIs exist but still need stronger production validation/error standardization across all endpoints.
@@ -55,6 +64,7 @@ It is written to be easy to follow for a mid-level developer.
 - API coverage tests are not fully implemented yet (unit + integration + e2e pending).
 - Deployment/runbook docs need a complete end-to-end operational checklist.
 - Bundle optimization is needed after Bootstrap adoption (current frontend build exceeds budget).
+- Frontend local build verification is currently blocked by environment error `spawn EPERM` on `ng build`.
 
 ### Immediate Next Steps
 1. Add backend automated tests for auth, ownership, groups, snapshots, analytics, and FX fallback.

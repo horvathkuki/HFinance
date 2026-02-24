@@ -56,6 +56,23 @@ npm start
 Frontend URL:
 - `http://localhost:4200`
 
+## Holdings editing flow (UI behavior)
+- Go to `Holdings` tab after login.
+- Select a portfolio.
+- In the holdings table:
+  - Use the pencil icon to load a row into edit mode.
+  - Update any field: symbol, quantity, avg purchase price, currency, group, purchase date.
+  - Click `Save` to persist changes through backend `PUT` endpoint.
+  - Click `Cancel` to exit edit mode without saving.
+  - Use the trash icon to delete a holding (confirmation modal required).
+
+## Dashboard charts location
+- `Dashboard` now shows:
+  - Portfolio Summary
+  - Allocation by Group
+  - Exposure by Currency
+- `Allocations` is used for managing portfolios and groups.
+
 ## 3) API base URL used by frontend
 Configured in:
 - `frontend/src/app/api.config.ts`
@@ -78,6 +95,11 @@ If HTTPS still fails locally, temporary fallback:
 - Change `frontend/src/app/api.config.ts` to `http://localhost:5047/api/v1`
 - Restart frontend.
 
+## Known local build issue
+- In this environment, `npm run build` may fail with:
+  - `An unhandled exception occurred: spawn EPERM`
+- This is an OS/process permission issue, not an application compile error in holdings logic.
+
 ## 5) Environment-specific connection strings
 Configuration files:
 - `backend/appsettings.json` (safe baseline)
@@ -97,3 +119,18 @@ And set environment:
 ASPNETCORE_ENVIRONMENT=Staging
 ASPNETCORE_ENVIRONMENT=Production
 ```
+
+Backend: 
+first-time setup only:
+dotnet dev-certs https --trust
+If dotnet ef is missing:
+dotnet tool install --global dotnet-ef
+
+cd d:\Work\HFinance\backend
+$env:ASPNETCORE_ENVIRONMENT="Development"
+dotnet ef database update
+dotnet run --launch-profile https
+
+Frontend: 
+cd d:\Work\HFinance\frontend
+npm start

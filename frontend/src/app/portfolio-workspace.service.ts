@@ -79,6 +79,7 @@ export class PortfolioWorkspaceService {
     averagePurchasePrice: number;
     currency: string;
     groupId: number;
+    purchaseDate?: string;
   }): void {
     this.portfolioService.addHolding(portfolioId, payload).subscribe({
       next: () => {
@@ -96,6 +97,23 @@ export class PortfolioWorkspaceService {
         this.reloadCurrentPortfolioData();
       },
       error: () => this.toastService.show('Could not delete holding.', 'danger'),
+    });
+  }
+
+  updateHolding(portfolioId: number, holdingId: number, payload: {
+    symbol: string;
+    quantity: number;
+    averagePurchasePrice: number;
+    currency: string;
+    groupId: number;
+    purchaseDate?: string;
+  }): void {
+    this.portfolioService.updateHolding(portfolioId, holdingId, payload).subscribe({
+      next: () => {
+        this.toastService.show('Holding updated.', 'success');
+        this.reloadCurrentPortfolioData();
+      },
+      error: () => this.toastService.show('Could not update holding.', 'danger'),
     });
   }
 
